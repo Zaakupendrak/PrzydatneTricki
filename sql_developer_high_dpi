@@ -1,0 +1,7 @@
+Dla sql_developera od oracle skalowanie ustawia się w katalogach binariów sqldevelopera, w pliku
+.../sqldeveloper19.4/opt/sqldeveloper/sqldeveloper/bin/sqldeveloper.conf
+należy dodać
+
+AddVMOption -Dsun.java2d.uiScale=2
+
+co skaluje nam dwukrotnie w górę. Niestety, można się posługiwać tylko intem.
