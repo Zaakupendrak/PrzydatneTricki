@@ -1,30 +1,33 @@
-# Musisz mieć zainstalowany cinnamon-settings-daemon-master, np w /opt
+# !!!PRZEDEWSZYSTKIM!!!
+# ZROBIĆ BACKUP /usr/lib/x86_64-linux-gnu/cinnamon-settings-daemon/csd-xsettings
 
-# W katalogu: 
-# /opt/cinnamon-settings-daemon-master/plugins/ 
-# należy znależć 
-# ./plugins/xsettings/csd-xsettings-manager.c  
-# i wyedytować DPI_FALLBACK na wybraną przez siebie wartość.
-# Później skompilować i skopiować biblioteki do 
-# /usr/lib/x86_64-linux-gnu/cinnamon-settings-daemon/csd-xsettings
-# pamietaj o backupie.
+
+# Pobieramy cinnamon-settings-daemon w celu kompilacji (dla mint 20: https://github.com/linuxmint/cinnamon-settings-daemon) i kopiujemy do /opt
+# W pliku /opt/cinnamon-settings-daemon-master/plugins/xsettings/csd-xsettings-manager.c  zmieniamy wartośc DPI_FALLBACK np na 144 (daje to nam skalę 1.5=144/96, gdzie 96 to default)
+# Pobrać dependencies i skompilować. 
+
+# Terminal step by step:
 
 # cd /opt/cinnamon-settings-daemon-master/
 # sudo vim ./plugins/xsettings/csd-xsettings-manager.c 
-# sudo make clean
-# sudo make install
-# sudo python /home/zaak/Desktop/newCsd.py 
+# # Instalujemy dependencies
+# sudo apt-get install -y libtool cinnamon-desktop-environment gtk+-3.0 libnotify-dev libgnomekbd-dev libxklavier-dev	libcanberra-dev libcvc-dev libupower-glib-dev libcanberra-gtk3-dev libcolord-dev libnss3-dev libcups2-dev
+# ./autogen.sh
+# sudo make 
+# python getCsd.py
+# sudo rm /usr/lib/x86_64-linux-gnu/cinnamon-settings-daemon/csd-xsettings
+# sudo cp ./new_libs/csd-xsettings /usr/lib/x86_64-linux-gnu/cinnamon-settings-daemon
 
 
-
-#newCsd.py:
-
+#getCsd.py:
 import os
 import shutil
 
 rootPath = '/opt/cinnamon-settings-daemon-master/plugins'
 libDir = '.libs'
-copyDestination = '/usr/lib/x86_64-linux-gnu/cinnamon-settings-daemon'
+# copyDestination = '/usr/lib/x86_64-linux-gnu/cinnamon-settings-daemon'
+os.mkdir('new_libs')
+copyDestination = 'new_libs'
 libToCopyPathList = []
 libToCopyNameList = []
 # Agregacja sciezek do plikow ktorych poszukujemy
