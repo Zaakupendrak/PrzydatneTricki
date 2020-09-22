@@ -9,9 +9,9 @@
 # Terminal step by step:
 
 # cd /opt/cinnamon-settings-daemon-master/
-# sudo vim ./plugins/xsettings/csd-xsettings-manager.c 
+# sudo vim ./plugins/xsettings/csd-xsettings-manager.c # zmieniamy DPI_FALLBACK
 # # Instalujemy dependencies
-# sudo apt-get install -y intltool glib2.0 libtool cinnamon-desktop-environment gtk+-3.0 libnotify-dev libgnomekbd-dev libxklavier-dev libcanberra-dev libcvc-dev libupower-glib-dev libcanberra-gtk3-dev libcolord-dev libnss3-dev libcups2-dev
+# sudo apt-get install -y libcinnamon-desktop-dev liblcms2-dev intltool glib2.0 libtool cinnamon-desktop-environment gtk+-3.0 libnotify-dev libgnomekbd-dev libxklavier-dev libcanberra-dev libcvc-dev libupower-glib-dev libcanberra-gtk3-dev libcolord-dev libnss3-dev libcups2-dev
 # ./autogen.sh
 # sudo make 
 # python getCsd.py
