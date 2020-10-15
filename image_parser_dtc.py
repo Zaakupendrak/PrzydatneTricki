@@ -4,6 +4,7 @@ import io
 import json
 import fitz
 from PIL import Image
+import cld3
 import cv2
 import numpy as np
 import sys
@@ -15,7 +16,7 @@ from collections import OrderedDict
 def str_to_json_name(literal, toRemoveList=['\'', ':', '(', ')']):
     for tr in toRemoveList:
         literal = literal.replace(tr, '')
-    return literal.lower().strip().replace(' ', '_')
+    return literal.lower().strip().replace(' ', '_').replace('-', '_')
 
 
 
@@ -38,6 +39,43 @@ def img_data_to_cv2(img_data):
     # return cv2.imdecode(np_arr, cv2.IMREAD_GRAYSCALE)
     return cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
 
+
+def fix_word_typo(literal, typo_dict):
+    fixed_literal = literal
+    for typo, correction in zip(typo_dict.keys(), typo_dict.values()):
+        if typo in literal:
+            fixed_literal = fixed_literal.replace(typo, correction)
+    return fixed_literal
+
+
+def fix_sentence_typo(literal):
+    literal = literal.strip()
+    # Naprawiamy literówki w obrębie słów zgodnie ze słownikiem:
+    typo_dict = {'adaptaiion': 'adaptation', 'centro': 'control', 'conirol': 'control', 'fram': 'from',
+                 'laft': 'left', 'medule': 'module', 'maifunction': 'malfunction', 'senscr': 'sensor',
+                 'senser': 'sensor', 'supplemenial': 'supplemental', 'temperaiure': 'temperature', 'toc': 'too',
+                 'Cbar': '0bar', '.00C': '.00°C'}
+    literal_sp = literal.split(' ')
+    for word in literal_sp:
+        if len(word) == 0:
+            continue
+        is_capital = word[0].isupper()
+        word_lower = word.lower()
+        if word.lower() in typo_dict:
+            correction = typo_dict[word_lower]
+            if is_capital:
+                correction = correction.capitalize()
+            literal_sp[literal_sp.index(word)] = correction
+    return ' '.join(literal_sp)
+
+
+def del_preceding_following_sign(literal):
+    char_delete_list = ['-', '~', 'I ', '|', '&', '_', '+']
+    if any(map(literal[:2].__contains__, char_delete_list)):
+        literal = literal[1:]
+    if any(map(literal[-2:].__contains__, char_delete_list)):
+        literal = literal[:-1]
+    return literal
 
 def rotate_image(mat, angle):
     """
@@ -65,8 +103,25 @@ def rotate_image(mat, angle):
 
 class MyOrderedDict(OrderedDict):
     def get_last_key(self):
+        if len(self) ==0:
+            return None
         k = next(reversed(self))
         return k
+
+
+def add_or_update_dict(ret_dict, key, kv_list, tolerance=17):
+    # Tesseract czasami gubi linie dlatego sprawdzamy po założonej tolerancji czy nie przypiąć wartości
+    # do istniejącego klucza z tolerancją
+    for i in range(-tolerance, tolerance + 1):
+        tmp_index = key + i
+        tmp_key = ret_dict.get(tmp_index)
+        if tmp_key:
+            ret_dict[tmp_index][kv_list[0]] = kv_list[1]
+            return
+    # Wpp dodajemy nowy klucz
+    # ret_dict[key] = {kv_list[0]: kv_list[1]}
+    ret_dict[key] = MyOrderedDict([(kv_list[0], kv_list[1])])
+
 
 def process_ocr(img):
     # cfg = r'--psm 6 --oem 3'
@@ -96,18 +151,7 @@ def process_ocr(img):
             else:
                 this_key_property[box_field_dict[it]] = int(box[it])
         # this_key = '%s:%s:%s' % (box[2], box[3], box[4], )
-        def add_or_update_dict(ret_dict, key, kv_list, tolerance=17):
-            # Tesseract czasami gubi linie dlatego sprawdzamy po założonej tolerancji czy nie przypiąć wartości
-            # do istniejącego klucza z tolerancją
-            for i in range(-tolerance, tolerance + 1):
-                tmp_index = key + i
-                tmp_key = ret_dict.get(tmp_index)
-                if tmp_key:
-                    ret_dict[tmp_index][kv_list[0]] = kv_list[1]
-                    return
-            # Wpp dodajemy nowy klucz
-            # ret_dict[key] = {kv_list[0]: kv_list[1]}
-            ret_dict[key] = MyOrderedDict([(kv_list[0], kv_list[1])])
+
 
         #Funkcja sprawdza czy text_box znajduje się w tej samej komórce co porpzedni napis
         def is_same_cell(last_key_prop, this_key_prop, tolerance=30):
@@ -151,32 +195,11 @@ def process_ocr(img):
         else:
             # Usuwamy niechciane znaki z początku lub końca napisu
             if len(last_val) >= 18:
-                char_delete_list = ['-', '~', 'I ', '|', '&', '_', '+']
-                if any(map(last_val[:2].__contains__, char_delete_list)):
-                    # print('last_val: %s' % last_val)
-                    # print('try repair!')
-                    last_val = last_val[1:]
-                if any(map(last_val[-2:].__contains__, char_delete_list)):
-                    last_val = last_val[:-1]
-            # Usuwamy whitespace na końcu i początku oraz naprawiamy stopnie Celsujsza
-            # last_val = last_val.strip().replace('.00C', '.00°C')
-            last_val = last_val.strip().replace('.00C', '.00°C')
-            # Naprawiamy literówki w obrębie słów zgodnie ze słownikiem:
-            typo_dict = {'adaptaiion': 'adaptation', 'centro': 'control', 'conirol': 'control', 'fram': 'from',
-                         'laft': 'left', 'medule': 'module', 'maifunction': 'malfunction', 'senscr': 'sensor',
-                         'senser': 'sensor', 'supplemenial': 'supplemental', 'toc': 'too'}
-            last_val_splited = last_val.split(' ')
-            for word in last_val_splited:
-                if len(word) == 0:
-                    continue
-                is_capital = word[0].isupper()
-                word_lower = word.lower()
-                if word.lower() in typo_dict:
-                    correction = typo_dict[word_lower]
-                    if is_capital:
-                        correction = correction.capitalize()
-                    last_val_splited[last_val_splited.index(word)] = correction
-            last_val = ' '.join(last_val_splited)
+                last_val = del_preceding_following_sign(last_val)
+
+            # Usuwamy whitespace na końcu
+            last_val = last_val.strip()
+            last_val = fix_sentence_typo(last_val)
 
             # Dodajemy do słownika kompletną parę k:v
             if last_val != '':
@@ -193,6 +216,11 @@ def process_ocr(img):
     return out_dict
 
 
+def is_code_line(literal):
+    literal_0_7 = literal[:7]
+    has_many_words = len(literal.split(' ')) > 1
+    return len(literal) > 8 and has_many_words and (literal_0_7.isupper() or literal_0_7.isnumeric())
+
 def parse_ocr_data(ocr_data_page_list):
     data_list_type = ''
     parsed_block_list = []
@@ -205,47 +233,55 @@ def parse_ocr_data(ocr_data_page_list):
         # Srawdzenie czy dtc
         dtc_unique_list = ['supplemental information on time of occurrence',
                            'control unit-specific environmental data']
-        if any(map(list(y_value_list[1].values())[0].lower().__contains__, dtc_unique_list)):
-            data_list_type = 'dtc_log'
+        is_dtc = False
+        if len(y_value_list) >= 1:
+            if any(map(list(y_value_list[1].values())[0].lower().__contains__, dtc_unique_list)):
+                is_dtc = True
+        # Inicjuję puste obiekty
+        group_dict = MyOrderedDict()
+        error_dict = MyOrderedDict()
+        last_dict = MyOrderedDict()
+        preproc_list = []
 
         for y_key, y_val in zip(y_key_list, y_value_list):
             x_keys = list(y_val.values())
             len_x_keys = len(x_keys)
             # print('y_key: %s' % y_val)
             # print('len_x_keys: %s' % len_x_keys)
+            # if len(parsed_block_list) > 0:
+            #     last_dict = parsed_block_list[-1]
+            # else:
+            #     last_dict = MyOrderedDict()
+            #     parsed_block_list.append(last_dict)
 
-            if data_list_type == 'dtc_log':
-                # print('IS DTC')
-                # print(x_keys)
-                if len(parsed_block_list) > 0:
-                    last_dict = parsed_block_list[-1]
-                else:
-                    last_dict = MyOrderedDict()
-                    parsed_block_list.append(last_dict)
-
+            if is_dtc:
+                data_list_type = 'dtc'
                 key_0 = x_keys[0]
+                key_0_lower = key_0.lower()
+                is_code_record = is_code_line(key_0)
                 # Nowy reokord błędu/odczuty
-                if len(key_0) > 8 and (key_0[:7].isupper() or key_0[:7].isnumeric()):
+                if is_code_record or len_x_keys == 1:
+                # if len(key_0) > 8 and key_0_lower not in dtc_unique_list:
                     # Sprawdzenie czy nie mamy doczynienia z multiline
-                    if len(last_dict) > 0:
-                        # Sprawdzamy czy obecny rekord jest jedno kolumnowy i czy klucz o indexie 0 poprzedniego rekordu
-                        # ma podobną wartość x. Zakładam multiline w obrębie tytułu wiersza
-                        prev_x = list(y_value_list[y_value_list.index(y_val)-1].keys())[0]
-                        curr_x = y_val.get_last_key()
-                        prev_y = y_key_list[y_key_list.index(y_key)-1]
-                        curr_y = y_key
-                        if len_x_keys == 1 and abs(curr_y-prev_y) < 45 and abs(prev_x-curr_x) < 7:
-                            key_to_update = last_dict.get_last_key()
-                            new_key = '%s_%s' % (key_to_update, str_to_json_name(key_0))
-                            last_dict[new_key] = last_dict.pop(key_to_update)
+                    print('x_keys:\n%s' % x_keys)
+                    print('len(group_dict): %s' % len(group_dict))
+                    # Dodanie całej grupy 'supplemental../control unit-specific..'
+                    if key_0_lower in dtc_unique_list:
+                        print(1)
+                        # Dla kolejnej grupy w obrębie pliku dodajemy grupę do wyjsciowej listy
+                        # if group_name != '':
+                        #     parsed_block_list.append(MyOrderedDict([(group_name, group_dict)]))
+                        group_name = str_to_json_name(key_0)
+                        group_dict = MyOrderedDict()
+                        __insert_into_dict(error_dict, group_name, group_dict)
+                        # parsed_block_list.append(MyOrderedDict([(group_name, group_dict)]))
+                    # Dodanie głównego obiektu błędu/odczytu
+                    elif is_code_record:
+                        print(2)
 
-                        # print('y_value_list[y_value_list.index(y_val)-1]: %s' % y_value_list[y_value_list.index(y_val)-1])
-                        # print(y_value_list.index(y_val))
-                        # print('last_dict.get_last_key(): %s' % last_dict.get_last_key())
-                    else:
-                        if len(last_dict) != 0:
-                            last_dict = MyOrderedDict()
-                            parsed_block_list.append(last_dict)
+                        # if len(last_dict) == 0:
+                        #     last_dict = MyOrderedDict()
+                        #     parsed_block_list.append(last_dict)
 
                         def get_valid_code(code):
                             # Funkcja naprawia kody błędów wynikające z interprtacji tesseracta
@@ -255,66 +291,122 @@ def parse_ocr_data(ocr_data_page_list):
                                 code = code.replace(typo, correction)
                             return code
 
-                        print('x_keys:\n%s' % x_keys)
                         # Kod ma siedem znaków, później spacja i opis
-                        __insert_into_dict(last_dict, 'code', get_valid_code(key_0[:7]))
-                        __insert_into_dict(last_dict, 'description', key_0[8:])
-                        __insert_into_dict(last_dict, 'status', x_keys[1])
+                        error_dict = MyOrderedDict()
+                        __insert_into_dict(error_dict, 'code', get_valid_code(key_0[:7]))
+                        __insert_into_dict(error_dict, 'description', key_0[8:])
+                        __insert_into_dict(error_dict, 'status', x_keys[1])
+                        parsed_block_list.append(error_dict)
+                        # __insert_into_dict(last_dict, 'error', error_dict)
+
+                    # Uzupełnienie wiersza podzielonego w multiline
+                    elif len(group_dict) > 0:
+                        print(3)
+                        prev_x = list(y_value_list[y_value_list.index(y_val)-1].keys())[0]
+                        curr_x = y_val.get_last_key()
+                        prev_y = y_key_list[y_key_list.index(y_key)-1]
+                        curr_y = y_key
+                        print('prev_x: %s, curr_x: %s, prev_y: %s, curr_y: %s' % (prev_x, curr_x, prev_y, curr_y))
+                        if len_x_keys == 1 and abs(curr_y-prev_y) < 51 and abs(prev_x-curr_x) < 7:
+                            key_to_update = group_dict.get_last_key()
+                            new_key = '%s_%s' % (key_to_update, str_to_json_name(key_0.replace('’', '')))
+                            group_dict[new_key] = group_dict.pop(key_to_update)
+
+                        # print('y_value_list[y_value_list.index(y_val)-1]: %s' % y_value_list[y_value_list.index(y_val)-1])
+                        # print(y_value_list.index(y_val))
+                        # print('last_dict.get_last_key(): %s' % last_dict.get_last_key())
+
+
                 # Pomijamy rekord ['Name', 'First occurrence', 'Last occurrence']
-                elif [k.split(' ')[0].lower() for k in x_keys] == ['name', 'first', 'last']:
-                    continue
-                elif len_x_keys == 3:
-                    main_key = str_to_json_name(key_0)
-                    record_dict = MyOrderedDict()
-                    __insert_into_dict(record_dict, 'first_occurrence', x_keys[1].replace(' ', ''))
-                    __insert_into_dict(record_dict, 'last_occurrence', x_keys[2].replace(' ', ''))
-                    __insert_into_dict(last_dict, main_key, record_dict)
-                elif len_x_keys == 2:
-                    __insert_into_dict(last_dict, str_to_json_name(key_0), x_keys[1].replace(' ', ''))
+                else:
+                    possible_row_start = ['ambient', 'average', 'battery', 'calculated', 'camshaft', 'cause', 'charge',
+                                          'control', 'coolant', 'current', 'development', 'engine', 'exhaust', 'fault',
+                                          'fuel', 'frequency', 'intake', 'main', 'number', 'operating', 'position',
+                                          'pressure', 'status', 'supplemental', 'torque', 'total', 'variation']
+                    if key_0.split(' ')[0].lower() not in possible_row_start:
+                        continue
+                    elif [k.split(' ')[0].lower() for k in x_keys] == ['name', 'first', 'last']:
+                        continue
+                    elif len_x_keys == 3:
+                        main_key = str_to_json_name(key_0)
+                        last_dict = MyOrderedDict()
+                        value_typo_dict = {' ': '', '0Cbar': '00bar', 'mm*3/hub': 'mm^3/hub'}
+                        __insert_into_dict(last_dict, 'first_occurrence', fix_word_typo(x_keys[1], value_typo_dict))
+                        __insert_into_dict(last_dict, 'last_occurrence', fix_word_typo(x_keys[2], value_typo_dict))
+                        __insert_into_dict(group_dict, main_key, last_dict)
+                    elif len_x_keys == 2:
+                        __insert_into_dict(group_dict, str_to_json_name(key_0), x_keys[1].replace(' ', ''))
 
-            # Przetwarzanie service_memory i event_momory
+            # Przetwarzanie dla service_memory i event_memory
             else:
-                def try_get_data_type(parsed_data_list):
-                    event_memory_keys = ['event_type', 'status', 'total_distance_at_first_occurrence_of_event',
-                                         'total_distance_at_last_occurrence_of_event', 'frequency_counter',
-                                         'number_of_ignition_cycles_since_last_occurrence_of_event']
-                    service_memory_keys = ['entry', 'main_odometer_reading', 'day_cycle_counter',
-                                           'travel_distance_since_last_service_due', 'days_since_last_service_due',
-                                           'maintenance_type', 'reset', 'operations_performed', 'workshop_code']
-                    # optional_keys = ['symbol', 'text']
-
-                    parsed_data_block = parsed_data_list[0]
-                    for list_type, expected_key_list in [('event_memory', event_memory_keys),
-                                                         ('service_memory', service_memory_keys)]:
-                        if all(expected_key in parsed_data_block for expected_key in expected_key_list):
-                            return list_type
-                    return None
-
                 if len(x_keys) != 2:
                     continue
+                preproc_list.append([str_to_json_name(x_keys[0].lower()), x_keys[1]])
 
-                key = str_to_json_name(x_keys[0].lower())
-                value = x_keys[1]
-                if len(parsed_block_list) > 0:
-                    last_dict = parsed_block_list[-1]
+        if preproc_list:
+            unique_keys = []
+            for k in [l[0] for l in preproc_list]:
+                if k not in unique_keys:
+                    unique_keys.append(k)
+
+            em_data_dict = {'data_type': 'event_memory',
+                            'required_key_list':
+                                ['event_type', 'status', 'total_distance_at_first_occurrence_of_event',
+                                 'total_distance_at_last_occurrence_of_event', 'frequency_counter',
+                                 'number_of_ignition_cycles_since_last_occurrence_of_event']}
+            sm_data_dict = {'data_type': 'service_memory',
+                            'required_key_list':
+                                ['entry', 'main_odometer_reading', 'day_cycle_counter',
+                                 'travel_distance_since_last_service_due', 'days_since_last_service_due',
+                                 'maintenance_type', 'reset', 'operations_performed', 'workshop_code']}
+
+            def try_get_data_type(unique_key_list, data_type_dict_list):
+                optional_keys = ['symbol', 'text']
+                for data_type_dict in data_type_dict_list:
+                    data_type = data_type_dict['data_type']
+                    required_key_list = data_type_dict['required_key_list']
+
+                    if all(required_key in unique_key_list for required_key in required_key_list):
+                        required_key_list.extend(optional_keys)
+                        return data_type, required_key_list
+                return None, None
+
+            data_list_type, possible_key_list = try_get_data_type(unique_keys, [em_data_dict, sm_data_dict])
+            if data_list_type is None:
+                return
+
+            for k, v in preproc_list:
+                if k not in possible_key_list:
+                    continue
+                if possible_key_list.index(k) == 0:
+                    last_dict = MyOrderedDict()
+                    parsed_block_list.append(last_dict)
                 else:
-                    last_dict = MyOrderedDict()
-                    parsed_block_list.append(last_dict)
-                # Jesli kolejny klucz jest w slowniku ale nie jest ostatnim kluczem to dodajemy nowy slownik
-                if last_dict.get(key) and last_dict.get_last_key() != key:
-                    last_dict = MyOrderedDict()
-                    parsed_block_list.append(last_dict)
+                    last_dict = parsed_block_list[-1]
                 # W niektórych tabelach klucze się powtarzają jeden po drugim
-                __insert_into_dict(last_dict, key, value)
+                __insert_into_dict(last_dict, k, v)
+            # if len(parsed_block_list) > 0:
+            #     last_dict = parsed_block_list[-1]
+            # else:
+            #     last_dict = MyOrderedDict()
+            #     parsed_block_list.append(last_dict)
+
+        # Jesli kolejny klucz jest w slowniku ale nie jest ostatnim kluczem to dodajemy nowy slownik
+        # print('key: %s ' % key)
+        # if last_dict.get(key) and last_dict.get_last_key() != key:
+        #     print('last_dict.get_last_key(): %s' % last_dict.get_last_key())
+        #     last_dict = MyOrderedDict()
+        #     parsed_block_list.append(last_dict)
+        # # W niektórych tabelach klucze się powtarzają jeden po drugim
+        # __insert_into_dict(last_dict, key, value)
 
     # print(json.dumps(parsed_block_list, indent=2, sort_keys=False, ensure_ascii=False))
     if not parsed_block_list:
         return
 
-    data_list_type = try_get_data_type(parsed_block_list) if not data_list_type else data_list_type
+    # data_list_type = try_get_data_type(parsed_block_list) if not data_list_type else data_list_type
     if data_list_type:
         return {data_list_type: parsed_block_list}
-
     return
 
 
@@ -432,6 +524,7 @@ if __name__ == "__main__":
     reader.read(file_name)
     doc = reader.get_images()
     out_data = []
+
     if is_image_document(doc):
         img_list = []
         for page in doc['pages']:
@@ -452,8 +545,8 @@ if __name__ == "__main__":
         #init_trackbars()
         # TODO DEBUG ↑
         # Zakładam dwie opcje orientacji obrazu
-        # for i in range(2):
-        for i in range(1):
+        for i in range(2):
+        # for i in range(1):
             ocred_data_list = []
             k = 0
             is_image_cropped = False
@@ -479,7 +572,7 @@ if __name__ == "__main__":
                 # Minimalna wysokość i szerokość paska
                 min_h = 29
                 min_w = img_w*0.97
-                cv2.imwrite('out/service_memory.png', img)
+                # cv2.imwrite('out/service_memory.png', img)
                 for cnt in blue_contours:
                     x, y, w, h = cv2.boundingRect(cnt)
                     # Filtorowanie dla znalezienia konturu o wymaganym rozmiarze
@@ -494,7 +587,7 @@ if __name__ == "__main__":
                         selected_box = img[y:y+h, x:x+w]
                         cropped_processing_type = \
                             pytesseract.image_to_string(selected_box).lower().strip().replace(' ', '_')
-                        cv2.imwrite('out/service_memory_box.png', selected_box)
+                        # cv2.imwrite('out/service_memory_box.png', selected_box)
                         # Pasek wskazujący na typ pliku
                         if w > h:
                             img = img[0:img_h, (x + w):img_w]
@@ -502,15 +595,13 @@ if __name__ == "__main__":
                             img = img[0:y, 0:img_w]
                         img_h, img_w = img.shape[:2]
                         is_image_cropped = True
-                        cv2.imwrite('out/service_memory_cropped.png', img)
+                        # cv2.imwrite('out/service_memory_cropped.png', img)
                 # Konwersja do palety szarości
                 img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
                 # Uzyskanie obrazu B&W. Wyciągnięcie białego tła - parametry dobrane w debuggowaniu.
                 # thresh=140 - moc, maxval=255 - maksymalna jasność
                 if is_image_cropped:
-                    print('\n%s' % cropped_processing_type)
                     if cropped_processing_type not in cropped_processing_type_list:
-                        print('continue')
                         continue
                     img = cv2.threshold(img, 180, 255, cv2.THRESH_BINARY)[1]
                 else:
@@ -551,7 +642,7 @@ if __name__ == "__main__":
                 # Druga metoda wyostrzenia, daje mocniejszy efekt w zależności od róznicy parametrów alpha i beta
                 img = cv2.addWeighted(img, 1.5, blur, -0.5, 0)
                 # cv2.imwrite('out/res.png', img)
-                cv2.imwrite('out/%s.png' % file_name.split('.')[0], img)
+                # cv2.imwrite('out/%s.png' % file_name.split('.')[0], img)
                 ocred_data_list.append(process_ocr(img))
 
                 f = open('out/%s_debug.json' % file_name.split('.')[0], 'w')
@@ -560,8 +651,9 @@ if __name__ == "__main__":
 
             # print(json.dumps(ocred_data_list, indent=2, sort_keys=False, ensure_ascii=False))
             out_data = parse_ocr_data(ocred_data_list)
+            print(json.dumps(out_data, indent=2, sort_keys=False, ensure_ascii=False))
             if out_data:
-                print(json.dumps(out_data, indent=2, sort_keys=False, ensure_ascii=False))
+                # print(json.dumps(out_data, indent=2, sort_keys=False, ensure_ascii=False))
                 f = open('out/%s.json' % file_name.split('.')[0], 'w')
                 f.write(json.dumps(out_data, indent=2, sort_keys=False, ensure_ascii=False))
                 f.close()
