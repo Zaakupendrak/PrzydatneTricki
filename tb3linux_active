@@ -1,0 +1,3 @@
+https://www.kernel.org/doc/html/latest/admin-guide/thunderbolt.html
+a w skrócie:
+# sudo echo 1 > /sys/bus/thunderbolt/devices/0-1/authorized
