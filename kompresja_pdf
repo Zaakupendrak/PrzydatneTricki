@@ -1,1 +1,70 @@
-gs -q -dNOPAUSE -dBATCH -dSAFER -dPDFA=2 -dPDFACompatibilityPolicy=1 -dSimulateOverprint=true -sDEVICE=pdfwrite -dCompatibilityLevel=1.3 -dPDFSETTINGS=/screen -dEmbedAllFonts=true -dSubsetFonts=true -dAutoRotatePages=/None -dColorImageDownsampleType=/Bicubic -dColorImageResolution=150 -dGrayImageDownsampleType=/Bicubic -dGrayImageResolution=150 -dMonoImageDownsampleType=/Bicubic -dMonoImageResolution=150 -sOutputFile=output.pdf input.pdf
+pdf_extract(){
+    pdftk $1 cat $2 output "e_$1"
+}
+
+
+pdf_split_optimize(){    
+    callPath=${PWD}
+
+    if [ $1 == "-h" ] || [ $1 == "-help" ] || [ $1 == "--help" ];
+    then
+            echo -e "pdf_split \e[1mfilePath\e[0m               splits and optimize only first page of file in filePath"
+            echo -e "pdf_split \e[1mdirPath\e[0m                splits and optimize only first pages of files in dirPath/*.pdf files"               
+            echo -e "pdf_split filePath/dirPath \e[1m-a\e[0m    flag enables splitting all pages of document; otherwise script extracts only first pages"   
+    elif [ -d "${1}" ] 
+    then
+        echo -e "\e[93m\e[1mMODE:\e[0m    directory splitting\e[0m"
+        cd $1
+        pdfPath=${PWD}
+        for filename in ${pdfPath}/*.pdf; 
+        do
+            [ -e "$filename" ] || continue
+            echo "_________________________________________________"
+            pdf_split_optimize_single ${filename}
+        done
+    else
+        echo -e "\e[93m\e[1mMODE:\e[0m    file splitting"
+        pdf_split_optimize_single ${1}
+
+
+    fi
+
+    cd ${callPath}
+}
+
+
+pdf_split_optimize_single(){
+    # Rozdzielenie stron na pliki
+    SP_DIR=tmp
+    mkdir -p ${SP_DIR}
+    fname="${1##*/}"
+    echo -e "\e[93m\e[1mINPUT:\e[0m   ${fname}"
+    if [ "$2" = "-a" ];
+    then
+            pdftk "$1" burst output "${SP_DIR}/%02d_${fname}"
+    else
+            pdftk "$1" cat 1 output "${SP_DIR}/${fname}"
+    fi
+    rm -f ${SP_DIR}/doc_info.txt
+
+    # Optymalizacja/kompresja
+    OP_DIR=pdf_so
+    mkdir -p ${OP_DIR}
+    for file in ${SP_DIR}/*.pdf
+    do
+            fname="${file##*/}"
+            echo -e "\e[93m\e[1mOUTPUT:  \e[0m\e[92m${fname}\e[0m"
+            # Wyłączone verbose
+            pdf_optimize ${file} ${OP_DIR}/${fname} 
+    done
+    rm -f doc_data.txt
+    rm -rf ${SP_DIR}
+}
+
+
+pdf_optimize(){
+    gs -q -dNOPAUSE -dBATCH -dSAFER -dPDFA=2 -dPDFACompatibilityPolicy=1 -dSimulateOverprint=true -sDEVICE=pdfwrite -dCompatibilityLevel=1.3 -dPDFSETTINGS=/screen -dEmbedAllFonts=true -dSubsetFonts=true -dAutoRotatePages=/None -dColorImageDownsampleType=/Bicubic -dColorImageResolution=150 -dGrayImageDownsampleType=/Bicubic -dGrayImageResolution=150 -dMonoImageDownsampleType=/Bicubic -dMonoImageResolution=150 -sOutputFile=${2} ${1}
+}
+
+
+pdf_split_optimize ${1} 
