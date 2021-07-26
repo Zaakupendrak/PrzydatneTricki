@@ -13,10 +13,12 @@
 # # Instalujemy dependencies
 # sudo apt-get install -y libcinnamon-desktop-dev liblcms2-dev intltool glib2.0 libtool cinnamon-desktop-environment gtk+-3.0 libnotify-dev libgnomekbd-dev libxklavier-dev libcanberra-dev libcvc-dev libupower-glib-dev libcanberra-gtk3-dev libcolord-dev libnss3-dev libcups2-dev meson debhelper-compat libdbus-glib-1-dev libgudev-1.0-dev libpolkit-gobject-1-dev librsvg2-dev libsystemd-dev libwacom-dev
 # sudo dpkg-buildpackage -i
-# sudo rm /usr/lib/x86_64-linux-gnu/cinnamon-settings-daemon/csd-xsettings
-# sudo cp /opt/cinnamon-settings-daemon-master/debian/tmp/usr/libexec/csd-xsettings /usr/lib/x86_64-linux-gnu/cinnamon-settings-daemon
+# sudo dpkg -i ../cinnamon-settings-daemon-dev_5.0.4_amd64.deb
 
 
+#############
+##   LUB   ##
+#############
 
 #getCsd.py:
 import os
