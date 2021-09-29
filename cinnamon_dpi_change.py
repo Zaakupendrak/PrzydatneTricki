@@ -1,7 +1,12 @@
 # !!!PRZEDEWSZYSTKIM!!!
-# ZROBIĆ BACKUP libek csd, 
+# ZROBIĆ BACKUP libek csd, z konsoli "cp /usr/libexec/csd-* ~/Desktop/csd_backup/"
 # Dla Mint 20 w /usr/lib/x86_64-linux-gnu/cinnamon-settings-daemon/ są tylko symlinki do csd-* zainstalowanych w /usr/libexec
-# Po zainstalowaniu nowo skompilowanego csd-xsettings w /usr/libexec nalezy poprawic symlinki.
+# Po zainstalowaniu nowo skompilowanego csd-xsettings w /usr/libexec możliwe że nalezy poprawic symlinki.
+# Instalacja skompilowanych libek bedzie problematyczna z powodu działających/restartujących się procesów. 
+# Mozna to zrobić bez działającego serwera x logując się do konsoli (CTRL+F2)
+# sudo service lightdm stop
+# sudo cp /home/sjakubowski/Downloads/cinnamon-settings-daemon-master/build/plugins/xsettings/csd-xsettings /usr/libexec
+# sudo service lightdm start
 
 
 # Pobieramy cinnamon-settings-daemon w celu kompilacji, dla mint 20: https://github.com/linuxmint/cinnamon-settings-daemon
