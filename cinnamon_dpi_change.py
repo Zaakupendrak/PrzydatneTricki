@@ -1,5 +1,5 @@
 # !!!PRZEDEWSZYSTKIM!!!
-# ZROBIĆ BACKUP libek csd, dla Mint 20.1 
+# ZROBIĆ BACKUP libek csd, dla Mint 20 w 
 
 
 # Pobieramy cinnamon-settings-daemon w celu kompilacji, dla mint 20: https://github.com/linuxmint/cinnamon-settings-daemon
