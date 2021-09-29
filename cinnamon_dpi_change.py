@@ -1,5 +1,7 @@
 # !!!PRZEDEWSZYSTKIM!!!
-# ZROBIĆ BACKUP libek csd, dla Mint 20 w 
+# ZROBIĆ BACKUP libek csd, 
+# Dla Mint 20 w /usr/lib/x86_64-linux-gnu/cinnamon-settings-daemon/ są tylko symlinki do csd-* zainstalowanych w /usr/libexec
+# Po zainstalowaniu nowo skompilowanego csd-xsettings w /usr/libexec nalezy poprawic symlinki.
 
 
 # Pobieramy cinnamon-settings-daemon w celu kompilacji, dla mint 20: https://github.com/linuxmint/cinnamon-settings-daemon
@@ -7,18 +9,12 @@
 # np 144 daje to nam skalę 1.5=144/96, gdzie 96 to default.
 
 # UWAGA #
-# Dla najnowsza wersji cinnamon czyli 5.0.5, cinnamon-settings-daemon korzysta z mesona do kompilacji
+# Dla najnowsza wersji cinnamon czyli 5.0.5, cinnamon-settings-daemon korzysta w kompilacji z meson/ninja (spoko sprawa)
 # Terminal step by step:
 # meson build/          - sprawdza dependenciesy
 # ninja -C build/	- kompiluje do katalogu build w rootcie paczki
 
-
-
-
-#############
-##   LUB   ##
-#############
-
+# Programik do kopiowania wszystkich csd-* do sourceDir.
 #getCsd.py:
 import os
 import shutil
