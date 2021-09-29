@@ -1,19 +1,18 @@
 # !!!PRZEDEWSZYSTKIM!!!
-# ZROBIĆ BACKUP /usr/lib/x86_64-linux-gnu/cinnamon-settings-daemon/csd-xsettings
+# ZROBIĆ BACKUP libek csd, dla Mint 20.1 
 
 
-# Pobieramy cinnamon-settings-daemon w celu kompilacji (dla mint 20: https://github.com/linuxmint/cinnamon-settings-daemon) i kopiujemy do /opt
-# W pliku /opt/cinnamon-settings-daemon-master/plugins/xsettings/csd-xsettings-manager.c  zmieniamy wartośc DPI_FALLBACK np na 144 (daje to nam skalę 1.5=144/96, gdzie 96 to default)
-# Pobrać dependencies i skompilować. 
+# Pobieramy cinnamon-settings-daemon w celu kompilacji, dla mint 20: https://github.com/linuxmint/cinnamon-settings-daemon
+# W pliku dir/cinnamon-settings-daemon-master/plugins/xsettings/csd-xsettings-manager.c  zmieniamy wartośc DPI_FALLBACK np na  wybraną przez siebie; 
+# np 144 daje to nam skalę 1.5=144/96, gdzie 96 to default.
 
+# UWAGA #
+# Dla najnowsza wersji cinnamon czyli 5.0.5, cinnamon-settings-daemon korzysta z mesona do kompilacji
 # Terminal step by step:
+# meson build/          - sprawdza dependenciesy
+# ninja -C build/	- kompiluje do katalogu build w rootcie paczki
 
-# cd /opt/cinnamon-settings-daemon-master/
-# sudo vim ./plugins/xsettings/csd-xsettings-manager.c # zmieniamy DPI_FALLBACK
-# # Instalujemy dependencies
-# sudo apt-get install -y libcinnamon-desktop-dev liblcms2-dev intltool glib2.0 libtool cinnamon-desktop-environment gtk+-3.0 libnotify-dev libgnomekbd-dev libxklavier-dev libcanberra-dev libcvc-dev libupower-glib-dev libcanberra-gtk3-dev libcolord-dev libnss3-dev libcups2-dev meson debhelper-compat libdbus-glib-1-dev libgudev-1.0-dev libpolkit-gobject-1-dev librsvg2-dev libsystemd-dev libwacom-dev docbook-xsl libcinnamon-desktop-dev xsltproc
-# sudo dpkg-buildpackage -i
-# sudo dpkg -i ../cinnamon-settings-daemon-dev_5.0.4_amd64.deb
+
 
 
 #############
