@@ -3,7 +3,7 @@
 # Dla Mint 20 w /usr/lib/x86_64-linux-gnu/cinnamon-settings-daemon/ są tylko symlinki do csd-* zainstalowanych w /usr/libexec
 # Po zainstalowaniu nowo skompilowanego csd-xsettings w /usr/libexec możliwe że nalezy poprawic symlinki.
 # Instalacja skompilowanych libek bedzie problematyczna z powodu działających/restartujących się procesów. 
-# Mozna to zrobić bez działającego serwera x logując się do konsoli (CTRL+F2)
+# Mozna to zrobić bez działającego serwera x logując się do konsoli (CTRL+ALT+F2)
 # sudo service lightdm stop
 # sudo cp /home/sjakubowski/Downloads/cinnamon-settings-daemon-master/build/plugins/xsettings/csd-xsettings /usr/libexec
 # sudo service lightdm start
@@ -18,6 +18,11 @@
 # Terminal step by step:
 # meson build/          - sprawdza dependenciesy
 # ninja -C build/	- kompiluje do katalogu build w rootcie paczki
+
+
+
+
+
 
 # Programik do kopiowania wszystkich csd-* do sourceDir.
 #getCsd.py:
