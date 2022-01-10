@@ -29,21 +29,30 @@
 import os
 import shutil
 
-rootPath = '/opt/cinnamon-settings-daemon-master/plugins'
-libDir = '.libs'
+rootPath = '/home/sjakubowski/Downloads/cinnamon-settings-daemon-master/build/plugins'
+destDir = '.libs'
+try:
+	shutil.rmtree(destDir)
+except:
+	print("$destDir do not exists")
 # copyDestination = '/usr/lib/x86_64-linux-gnu/cinnamon-settings-daemon'
-os.mkdir('new_libs')
-copyDestination = 'new_libs'
+try:
+	os.mkdir(destDir)
+except:
+	rint("$destDir already exists")
+	
+copyDestination = destDir
 libToCopyPathList = []
 libToCopyNameList = []
 # Agregacja sciezek do plikow ktorych poszukujemy
 for pluginDir in os.listdir(rootPath):
-	pluginLibDir = os.path.join(rootPath, pluginDir, libDir)
+	print("dir: " + pluginDir)
+	pluginLibDir = os.path.join(rootPath, pluginDir)
 	if not os.path.exists(pluginLibDir):
 		continue
 	liblibNameList = os.listdir(pluginLibDir)
 	for libName in liblibNameList:
-		if libName.startswith('csd-'):
+		if libName.startswith('csd-') and '.' not in libName:
 			libPath = os.path.join(pluginLibDir, libName)
 			if libPath not in libToCopyPathList:
 				libToCopyNameList.append(libName)
@@ -57,4 +66,5 @@ if libToCopyPathList:
 			os.remove(oldLibPath)
 	# kopiujemy nowe libki
 	for libToCopy in libToCopyPathList:
+		print("copying: " + libToCopy)
 		shutil.copy2(libToCopy, copyDestination)
