@@ -31,7 +31,7 @@ else
         echo -e "\e[93m\e[1mOUTPUT:  \e[0m\e[92m${fname}\e[0m"
         # Wyłączone verbose
         #pdf_optimize ${file} ${OP_DIR}/${fname}
-	cp ${file} ${OP_DIR}/${fname}
+  cp "${file}" "${OP_DIR}"/"${fname}"
     done
     rm -f doc_data.txt
     rm -rf ${SP_DIR}
@@ -51,57 +51,76 @@ else
     SP_DIR=tmp
     rm -rf ${SP_DIR} 2>/dev/null
     mkdir -p ${SP_DIR}
-    fname="${1##*/}"
-    echo -e "\e[93m\e[1mINPUT:\e[0m   ${fname}"
-    splitAll=false
-    kropPdf=false
-    optimizePdf=false
+    DO_SPLIT_ALL=false
+    DO_KROP_PDF=false
+    DO_OPTIMIZE_PDF=false
     lastMonthYear=$(date --date="-1 month" +"%m.%Y")
     inputPdf=""
-    for option in $@
+    # FILES_ARRAY=("")
+    declare -a FILES_ARRAY
+    for option in "$@"
     do  
-        if [ "$option" = "-a" ];
-        then
-            splitAll=true
-        elif [ "$option" = "-c" ];
-        then
-            kropPdf=true
-        elif [ "$option" = "-o" ];
-        then
-            optimizePdf=true
-        elif [ "${option##*.}" = "pdf" ]; 
-	then
-            inputPdf="$option"
-        fi  
+      if [ "$option" = "-a" ];
+      then
+        DO_SPLIT_ALL=true
+      elif [ "$option" = "-c" ];
+      then
+        DO_KROP_PDF=true
+      elif [ "$option" = "-o" ];
+      then
+        DO_OPTIMIZE_PDF=true
+      elif [ "${option##*.}" = "pdf" ]
+      then
+        # Dodanie nazwy pliku do szeregu
+        # echo "option: $option"
+        # Escapeowanie
+        # FILENAME=$(printf %q "$option")
+        # echo "filename: $FILENAME"
+        # FILES_ARRAY=(${FILES_ARRAY[@]} "$FILENAME")
+        FILES_ARRAY+=("$option")
+      fi  
     done
 
-    echo $inputPdf
-    echo "$inputPdf"
-    if [ $inputPdf = "" ];
+    # TODO - debuggowanie
+    # for i in "${FILES_ARRAY[@]}"
+    # do
+    #   echo "echo array objs: $i"
+    # done
+
+
+    if [ ${#FILES_ARRAY[@]} -eq 0 ]
     then
-        echo -e "\e[1;41m[ERROR]\e[0m No pdf file provided"
-        exit 0 
+      echo -e "\e[1;41m[ERROR]\e[0m Files array is empty"
+      exit 0 
     fi
 
-    # Podzielenie pdf wielostronicowego na pojedyncze pliki
-    if $splitAll;
-    then
-        pdftk $inputPdf burst output "${SP_DIR}/%02d_${fname}"
-        echo "split all"
-    else
-        pdftk $inputPdf cat 1 output "${SP_DIR}/${fname}"
-    fi
-    rm -f ${SP_DIR}/doc_info.txt 2>/dev/null
+    # echo "input path: " $inputPdf
+    for FILE in "${FILES_ARRAY[@]}"
+    do      
+      fname="${FILE##*/}" 
+
+      # Podzielenie pdf wielostronicowego na pojedyncze pliki
+      if $DO_SPLIT_ALL;
+      then
+        pdftk "$FILE" burst output "${SP_DIR}/%02d_${fname}"
+        echo -e "\e[93m\e[1mEXTRACT ALL PAGE OF:\e[0m   ${fname}"   
+      else
+        pdftk "$FILE" cat 1 output "${SP_DIR}/${fname}"        
+        echo -e "\e[93m\e[1mEXTRACT 1ST PAGE OF:\e[0m   ${fname}"   
+      fi
+      rm -f "${SP_DIR}"/doc_info.txt 2>/dev/null
+    done
 
 
-    # Wycinanie white space
-    if $kropPdf;
+    # Wycinanie white space narzędziem KROP
+    if $DO_KROP_PDF;
     then
-        for file in ${SP_DIR}/*.pdf
-        do
-            sudo krop $file -o "${SP_DIR}/paliwo_.${lastMonthYear}.pdf"
-            rm $file 2>/dev/null
-        done
+      for file in "${SP_DIR}"/*.pdf
+      do
+        sudo krop "$file" -o "${SP_DIR}/paliwo_.${lastMonthYear}.pdf"
+        wmctrl -r 'krop' -b toggle,fullscreen
+        rm "$file" 2>/dev/null
+      done
     fi
 
 
@@ -109,20 +128,20 @@ else
     mkdir -p ${OP_DIR}    
     for file in ${SP_DIR}/*.pdf
     do
-        fname="${file##*/}"
-        echo -e "\e[93m\e[1mOUTPUT:  \e[0m\e[92m${fname}\e[0m"
-        # Wyłączone verbose
-        if $optimizePdf;
-        then
-            pdf_optimize ${file} ${OP_DIR}/${fname}
-        else
-            cp ${file} ${OP_DIR}/${fname}
-        fi
+      fname="${file##*/}"
+      echo -e "\e[93m\e[1mOUTPUT:  \e[0m\e[92m${fname}\e[0m"
+      # Włączona optymalizacja dodatkowa
+      if $DO_OPTIMIZE_PDF;
+      then
+          pdf_optimize "${file}" "${OP_DIR}"/"${fname}"
+      else
+          cp "${file}" "${OP_DIR}"/"${fname}"
+      fi
     done
-    rm -f doc_data.txt
-    rm -rf ${SP_DIR}
+    rm -f doc_data.txt 2>/dev/null
+    rm -rf "${SP_DIR}" 2>/dev/null
     echo -e "\e[1;237;42m[DONE]\e[0m"
-fi
+fi  
 }
 
 pdf_optimize(){
