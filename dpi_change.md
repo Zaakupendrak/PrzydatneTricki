@@ -33,7 +33,7 @@ ninja -C build/
 ```
 
 # 5. Podmiana libek
-Należy wejść w konsolę bez GUI, np CTLR+F2 
+Należy wejść w konsolę bez GUI, np CTLR+ALT+F1 
 ```
 sudo service lightdm stop
 sudo cp /home/zaak/Downloads/cinnamon-settings-daemon-master/build/plugins/xsettings/csd-xsettings /usr/libexec
