@@ -1,1 +1,0 @@
-awk 'NR >= start_line_INT && NR <= end_line_INT' some/file/path.xx
