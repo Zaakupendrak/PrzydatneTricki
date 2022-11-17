@@ -26,8 +26,9 @@ vim cinnamon-settings-daemon-master/plugins/xsettings/csd-xsettings-manager.c
 ```shell
 cd cinnamon-settings-daemon-master
 #dpkg-buildpackage - powie jakich dependenciesów brakuje
+sudo apt update
 sudo apt install -y cmake gcc-multilib libcanberra-gtk3-dev libtool cinnamon-desktop-environment libgtk3.0-cil-dev libnotify-dev libgnomekbd-dev libxklavier-dev libcanberra-dev libcvc-dev libupower-glib-dev libcanberra-gtk3-dev libcolord-dev libnss3-dev libcups2-dev
-sudo apt install -y docbook-xsl intltool libcinnamon-desktop-dev libgudev-1.0-dev liblcms2-dev libpolkit-gobject-1-dev librsvg2-dev libsystemd-dev libwacom-dev xsltproc
+sudo apt install -y docbook-xsl intltool libcinnamon-desktop-dev libgudev-1.0-dev liblcms2-dev libpolkit-gobject-1-dev librsvg2-dev libsystemd-dev libwacom-dev xsltproc debhelper
 meson build/  
 ninja -C build/
 ```
