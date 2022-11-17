@@ -19,7 +19,7 @@ https://github.com/linuxmint/cinnamon-settings-daemon
 # 3. Edycja DPI_FALLBACK
 Np wartość 136 daje to nam skalę 1.38=136/96, gdzie 96 to default.
 ```shell
-vim cinnamon-settings-daemon-master/plugins/xsettings/csd-xsettings-manager.c
+vim ~/Downloads/cinnamon-settings-daemon-master/plugins/xsettings/csd-xsettings-manager.c
 ```
 
 # 4. Kompilacja
