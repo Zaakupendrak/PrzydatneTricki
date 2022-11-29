@@ -1,5 +1,7 @@
 is_error(){
-  if [[ "$1" =~ "ie ustawiono" ]] || [[ "$1" =~ "error" ]] || [[ "$1" =~ "Error" ]] || [[ "$1" =~ "ERROR" ]] || [[ "$1" =~ "not found" ]] || [[ "$1" =~ "undefined reference" ]] ;
+  #shopt -s nocasematch # set case insensitive search
+  if egrep -iq  '(\sno rule|error\s|\serror|nie\sustawiono|not\sfound|undefined\sreference)' <<< $1 ;
+  # if [[ "$1" =~ "nie ustawiono" ]] || [[ "$1" =~ "error" ]] || [[ "$1" =~ "Error" ]] || [[ "$1" =~ "ERROR" ]] || [[ "$1" =~ "not found" ]] || [[ "$1" =~ "undefined reference" ]] ;
   then
     export CM='\033[1;91m' # bold light red
     export CL='\033[38;2;255;150;0m' # orange
@@ -10,16 +12,18 @@ is_error(){
   fi
 }
 
+
 is_warn(){
+  #shopt -s nocasematch # set case insensitive search
   # if [[ $1 =~ "arning" ]] || [[ $1 =~ "ARNING" ]] ;
-  if [[ $1 =~ "WARNING" ]] ;
+  if egrep -iq  'warning' <<< $1 ;
   then
     # export CM='\033[1;33m' # bold yellow
     # export CL='\033[0;33m' # brown
     # export CM='\033[1;35m' # bold ligh purple
     export CM='\033[38;2;221;160;221m' # plum
     # export CL='\033[38;2;218;112;214m' # fuchsia
-    export CL='\033[38;2;147;112;219m' # mediumpurple   
+    export CL='\033[38;2;147;112;219m' # mediumpurple
     # export CL='\033[95;7m' # purple backgorund
     return 0 # true
   else
@@ -27,11 +31,14 @@ is_warn(){
   fi
 }
 
+
 is_new_warn_error(){
-    if is_warn "$1" || is_error "$1"; then
-        return 0 # true
+    if is_warn "$1" ; then
+      return 0 # true
+    elif is_error "$1" ; then
+      return 0 # true
     else
-        return 1 # false
+      return 1 # false
     fi
 }
 
@@ -49,7 +56,9 @@ color()(
         else
           CURR_COLLOR=$CL
         fi
-    fi    
+    fi
     echo -e "${CURR_COLLOR}${line}${NC}">&2
   done <<< "$MSG"
 )3>&1
+
+alias make='color make'
