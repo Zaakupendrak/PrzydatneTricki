@@ -1,6 +1,6 @@
 is_error(){
   #shopt -s nocasematch # set case insensitive search
-  if egrep -iq  '(\sno rule|error\s|\serror|nie\sustawiono|not\sfound|undefined\sreference)' <<< $1 ;
+  if egrep -iq  '(\sno rule|error\s|\serror|nie\sustawiono|not\sfound|undefined\sreference)' <<< $1 ; 
   # if [[ "$1" =~ "nie ustawiono" ]] || [[ "$1" =~ "error" ]] || [[ "$1" =~ "Error" ]] || [[ "$1" =~ "ERROR" ]] || [[ "$1" =~ "not found" ]] || [[ "$1" =~ "undefined reference" ]] ;
   then
     export CM='\033[1;91m' # bold light red
@@ -44,9 +44,15 @@ is_new_warn_error(){
 
 
 color()(
-  NC='\033[0m'
-  set -o pipefail; export MSG=$("$@" 2>&1>&3);
-  #echo "MSG: $MSG"
+  NC='\033[0m' #no color
+  
+  set -o pipefail 
+  # set -o pipefail prevents errors in a pipeline from being masked. 
+  # If any command in a pipeline fails, that return code will be used as the return code of the whole pipeline.
+
+
+  export MSG=$("$@" 2>&1>&3) # redirects STDERR to STDOUT  and STDOUT to temporary file descriptor 3
+  
   CURR_COLLOR='\033[0m'
   while IFS= read -r line; do
     # setup color for block
@@ -56,9 +62,12 @@ color()(
         else
           CURR_COLLOR=$CL
         fi
+    # elif egrep -iq 'kompilacja' <<< $1 ; then 
+    #   CURR_COLLOR='\033[38;2;34;139;34m' #green
     fi
-    echo -e "${CURR_COLLOR}${line}${NC}">&2
+    echo -e "${CURR_COLLOR}${line}${NC}" #>&2
   done <<< "$MSG"
-)3>&1
+)3>&1 # bring back original STDOUT from file descriptor 3
+
 
 alias make='color make'
