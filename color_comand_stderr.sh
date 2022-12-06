@@ -45,14 +45,14 @@ is_new_warn_error(){
 
 color()(
   NC='\033[0m' #no color
-  
+
   set -o pipefail 
   # set -o pipefail prevents errors in a pipeline from being masked. 
   # If any command in a pipeline fails, that return code will be used as the return code of the whole pipeline.
 
 
   export MSG=$("$@" 2>&1>&3) # redirects STDERR to STDOUT  and STDOUT to temporary file descriptor 3
-  
+
   CURR_COLLOR='\033[0m'
   while IFS= read -r line; do
     # setup color for block
@@ -64,6 +64,9 @@ color()(
         fi
     # elif egrep -iq 'kompilacja' <<< $1 ; then 
     #   CURR_COLLOR='\033[38;2;34;139;34m' #green
+    fi
+    if egrep -iq 'kompilacja wersji' <<< "$line" ; then
+        export CURR_COLLOR='\033[38;2;39;138;34m' # success green        
     fi
     echo -e "${CURR_COLLOR}${line}${NC}" #>&2
   done <<< "$MSG"
