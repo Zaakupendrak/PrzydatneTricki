@@ -1,0 +1,5 @@
+# z negacja ?! , usunie wszystki nie bedace 1-6-40,41,42,43,44,45
+ls | grep -P 'blik_ian_1-6-(?!4[0-5])' |  xargs -d "\n" rm -rf
+
+# bez negacji, usunie wszystkie
+ls | grep -P 'blik_ian_1-6-' |  xargs -d "\n" rm -rf
