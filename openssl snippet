@@ -1,0 +1,3 @@
+Weryfikacja modulo klucz/cert
+openssl x509 -pubkey -in ec_x509_ES3.pem -noout | openssl md5
+openssl pkey -in ec_private_ES3_PKCS8.pem -pubout | openssl md5
